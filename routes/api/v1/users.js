@@ -115,7 +115,7 @@ router.post("/login", (req, res) => {
 // @ access   Private
 router.get(
   "/current",
-  passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false }), // Token contains user model
   (req, res) => {
     res.json({
       id: req.user.id,
