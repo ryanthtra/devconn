@@ -3,6 +3,9 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const passport = require("passport");
 
+// loading the validator
+const validate_profile = require("../../../validation/profile");
+
 const profile = require("../../../models/Profile");
 const user = require("../../../models/User");
 
@@ -20,7 +23,8 @@ router.get(
   (req, res) => {
     const errors = {};
     profile
-      .findOne({ user: req.user.id })
+      .findOne({ user: req.user.id }) // Finds the user from token (req)
+      .populate("user", ["name", "avatar"]) // Populates user object with the model's other props.
       .then(profile => {
         if (!profile) {
           errors.noprofile = "This user has no profile!";
@@ -39,6 +43,14 @@ router.post(
   "/",
   passport.authenticate("jwt", { session: false }), // Token contains user model
   (req, res) => {
+    // Run validator
+    const { errors, isValid } = validate_profile(req.body);
+
+    // Return errors if validator fails.
+    if (!isValid) {
+      return res.status(400).json(errors);
+    }
+
     // Get all the fields
     const profile_fields = {};
     profile_fields.user = req.user.id;
@@ -56,15 +68,11 @@ router.post(
     }
     // Social network urls
     profile_fields.social = {};
-    if (req.body.social.facebook)
-      profile_fields.social.facebook = req.body.facebook;
-    if (req.body.social.twitter)
-      profile_fields.social.twitter = req.body.twitter;
-    if (req.body.social.youtube)
-      profile_fields.social.youtube = req.body.youtube;
-    if (req.body.social.linkedin)
-      profile_fields.social.linkedin = req.body.linkedin;
-    if (req.body.social.instagram)
+    if (req.body.facebook) profile_fields.social.facebook = req.body.facebook;
+    if (req.body.twitter) profile_fields.social.twitter = req.body.twitter;
+    if (req.body.youtube) profile_fields.social.youtube = req.body.youtube;
+    if (req.body.linkedin) profile_fields.social.linkedin = req.body.linkedin;
+    if (req.body.instagram)
       profile_fields.social.instagram = req.body.instagram;
 
     profile.findOne({ user: req.user.id }).then(theprofile => {
